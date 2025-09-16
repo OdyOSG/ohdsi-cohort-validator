@@ -30,8 +30,8 @@ def read_requirements():
 setup(
     name="cohort-validator",
     version="1.0.0",
-    author="EPAM Systems",
-    author_email="cohort-validator@epam.com",
+    author="Numan Burak Fidan",
+    author_email="numanburak_fidan@epam.com",
     description="Python interface to OHDSI CIRCE cohort validation library",
     long_description=read_readme(),
     long_description_content_type="text/markdown",
@@ -70,8 +70,7 @@ setup(
     },
     include_package_data=True,
     package_data={
-        "cohort_validator": ["*.jar", "*.json"],
-        "*": ["circe-be/**/*"],
+        "cohort_validator": ["target/*.jar", "target/dependencies/*.jar", "*.json"],
     },
     zip_safe=False,
 )

@@ -4,11 +4,8 @@ include LICENSE
 include requirements.txt
 include pyproject.toml
 
-# Include CIRCE JAR files and dependencies when they exist
-recursive-include circe-be/target *.jar
-
-# Include the entire circe-be directory structure
-recursive-include circe-be *
+# Include JAR files from the package target directory
+recursive-include cohort_validator/target *.jar
 
 # Exclude development files
 exclude .gitignore

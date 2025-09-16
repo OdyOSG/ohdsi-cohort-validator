@@ -6,6 +6,9 @@ CIRCE_DIR = circe-be
 TARGET_DIR = $(CIRCE_DIR)/target
 JAR_FILE = $(TARGET_DIR)/circe-1.13.0-SNAPSHOT.jar
 DEPS_DIR = $(TARGET_DIR)/dependencies
+PACKAGE_TARGET_DIR = cohort_validator/target
+PACKAGE_JAR_FILE = $(PACKAGE_TARGET_DIR)/circe-1.13.0-SNAPSHOT.jar
+PACKAGE_DEPS_DIR = $(PACKAGE_TARGET_DIR)/dependencies
 VENV_DIR = venv
 PYTHON = $(VENV_DIR)/bin/python
 PIP = $(VENV_DIR)/bin/pip
@@ -36,7 +39,7 @@ help: ## Show this help message
 
 # Setup targets
 .PHONY: setup
-setup: venv install-deps build-jar ## Set up the complete environment (venv, dependencies, JAR files)
+setup: venv install-deps copy-jar-to-package ## Set up the complete environment (venv, dependencies, JAR files)
 
 .PHONY: venv
 venv: ## Create Python virtual environment
@@ -75,9 +78,18 @@ build-jar: clone-circe ## Build the CIRCE Java JAR file and dependencies
 	@cd $(CIRCE_DIR) && mvn dependency:copy-dependencies -DoutputDirectory=target/dependencies
 	@echo "$(GREEN)✓ CIRCE JAR file and dependencies built$(NC)"
 
+.PHONY: copy-jar-to-package
+copy-jar-to-package: build-jar ## Copy JAR files to package target directory
+	@echo "$(BLUE)Copying JAR files to package target directory...$(NC)"
+	@mkdir -p $(PACKAGE_TARGET_DIR)
+	@cp $(JAR_FILE) $(PACKAGE_JAR_FILE)
+	@cp -r $(DEPS_DIR) $(PACKAGE_DEPS_DIR)
+	@echo "$(GREEN)✓ JAR files copied to package target directory$(NC)"
+
 .PHONY: check-deps
 check-deps: ## Check if JAR files and dependencies exist
 	@echo "$(BLUE)Checking Java dependencies...$(NC)"
+	@echo "$(CYAN)Original CIRCE build:$(NC)"
 	@if [ -f "$(JAR_FILE)" ]; then \
 		echo "$(GREEN)✓ CIRCE JAR file exists: $(JAR_FILE)$(NC)"; \
 	else \
@@ -88,6 +100,18 @@ check-deps: ## Check if JAR files and dependencies exist
 		echo "$(GREEN)✓ Dependencies directory exists with $$JAR_COUNT JAR files$(NC)"; \
 	else \
 		echo "$(RED)✗ Dependencies directory missing: $(DEPS_DIR)$(NC)"; \
+	fi
+	@echo "$(CYAN)Package target directory:$(NC)"
+	@if [ -f "$(PACKAGE_JAR_FILE)" ]; then \
+		echo "$(GREEN)✓ Package JAR file exists: $(PACKAGE_JAR_FILE)$(NC)"; \
+	else \
+		echo "$(RED)✗ Package JAR file missing: $(PACKAGE_JAR_FILE)$(NC)"; \
+	fi
+	@if [ -d "$(PACKAGE_DEPS_DIR)" ]; then \
+		PACKAGE_JAR_COUNT=$$(ls -1 $(PACKAGE_DEPS_DIR)/*.jar 2>/dev/null | wc -l | xargs -I {} echo "{}"); \
+		echo "$(GREEN)✓ Package dependencies directory exists with $$PACKAGE_JAR_COUNT JAR files$(NC)"; \
+	else \
+		echo "$(RED)✗ Package dependencies directory missing: $(PACKAGE_DEPS_DIR)$(NC)"; \
 	fi
 
 # Python package targets
@@ -199,8 +223,14 @@ clean-circe: ## Remove the cloned CIRCE repository
 	@rm -rf $(CIRCE_DIR)
 	@echo "$(GREEN)✓ CIRCE repository removed$(NC)"
 
+.PHONY: clean-package-target
+clean-package-target: ## Clean package target directory
+	@echo "$(BLUE)Cleaning package target directory...$(NC)"
+	@rm -rf $(PACKAGE_TARGET_DIR)
+	@echo "$(GREEN)✓ Package target directory cleaned$(NC)"
+
 .PHONY: clean-python
-clean-python: ## Clean Python build artifacts and cache
+clean-python: clean-package-target ## Clean Python build artifacts and cache
 	@echo "$(BLUE)Cleaning Python artifacts...$(NC)"
 	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	@find . -type f -name "*.pyc" -delete 2>/dev/null || true
