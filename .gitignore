@@ -72,7 +72,7 @@ instance/
 docs/_build/
 
 # PyBuilder
-circe-be
+circe-be/
 # Jupyter Notebook
 .ipynb_checkpoints
 
