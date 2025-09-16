@@ -59,6 +59,7 @@ include = ["cohort_validator*"]
 
 [tool.setuptools.package-data]
 cohort_validator = ["*.jar", "*.json"]
+"*" = ["circe-be/**/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["cohort_validator/tests"]

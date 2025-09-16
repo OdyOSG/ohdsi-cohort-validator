@@ -71,6 +71,7 @@ setup(
     include_package_data=True,
     package_data={
         "cohort_validator": ["*.jar", "*.json"],
+        "*": ["circe-be/**/*"],
     },
     zip_safe=False,
 )
