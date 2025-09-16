@@ -48,10 +48,10 @@ dev = [
 cohort-validate = "cohort_validator.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/epam/ohdsi-cohort-validator"
-Repository = "https://github.com/epam/ohdsi-cohort-validator"
-Documentation = "https://github.com/epam/ohdsi-cohort-validator#readme"
-"Bug Tracker" = "https://github.com/epam/ohdsi-cohort-validator/issues"
+Homepage = "https://github.com/OdyOSG/ohdsi-cohort-validator"
+Repository = "https://github.com/OdyOSG/ohdsi-cohort-validator"
+Documentation = "https://github.com/OdyOSG/ohdsi-cohort-validator#readme"
+"Bug Tracker" = "https://github.com/OdyOSG/ohdsi-cohort-validator/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]

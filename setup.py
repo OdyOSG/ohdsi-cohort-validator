@@ -35,7 +35,7 @@ setup(
     description="Python interface to OHDSI CIRCE cohort validation library",
     long_description=read_readme(),
     long_description_content_type="text/markdown",
-    url="https://github.com/epam/ohdsi-cohort-validator",
+    url="https://github.com/OdyOSG/ohdsi-cohort-validator",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",

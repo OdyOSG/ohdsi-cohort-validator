@@ -22,20 +22,20 @@ A Python package providing an interface to the OHDSI CIRCE (Cohort Inclusion Rul
 
 ```bash
 # Install directly from GitHub
-pip install git+https://github.com/epam/ohdsi-cohort-validator.git
+pip install git+https://github.com/OdyOSG/ohdsi-cohort-validator.git
 
 # Install with development dependencies
-pip install git+https://github.com/epam/ohdsi-cohort-validator.git[dev]
+pip install git+https://github.com/OdyOSG/ohdsi-cohort-validator.git[dev]
 
 # Install specific version (if tagged)
-pip install git+https://github.com/epam/ohdsi-cohort-validator.git@v1.0.0
+pip install git+https://github.com/OdyOSG/ohdsi-cohort-validator.git@v1.0.0
 ```
 
 ### Development Setup
 
 ```bash
 # Clone the repository
-git clone https://github.com/epam/ohdsi-cohort-validator.git
+git clone https://github.com/OdyOSG/ohdsi-cohort-validator.git
 cd ohdsi-cohort-validator
 
 # Set up the environment and build dependencies
