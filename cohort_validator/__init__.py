@@ -11,7 +11,7 @@ you to validate cohort expressions and receive detailed warnings and errors.
 from .cohort_validator import CohortValidator
 
 __version__ = "1.0.0"
-__author__ = "EPAM Systems"
-__email__ = "cohort-validator@epam.com"
+__author__ = "Numan Burak Fidan"
+__email__ = "numanburak_fidan@epam.com"
 
 __all__ = ["CohortValidator"]
