@@ -1,0 +1,23 @@
+# Include package data
+include README.md
+include LICENSE
+include requirements.txt
+include pyproject.toml
+
+# Include CIRCE JAR files and dependencies when they exist
+recursive-include circe-be/target *.jar
+
+# Exclude development files
+exclude .gitignore
+exclude .dockerignore
+exclude Makefile
+exclude docker-compose.yml
+exclude nginx.conf
+exclude start.sh
+
+# Exclude test files from distribution
+recursive-exclude cohort_validator/tests *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * *.so
+recursive-exclude * .DS_Store
