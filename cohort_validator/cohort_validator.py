@@ -50,50 +50,24 @@ class CohortValidator:
 
     def _get_default_jar_path(self) -> str:
         """Get the default path to the CIRCE JAR file."""
-        import pkg_resources
-
-        # Try to find JAR in package data first
-        try:
-            jar_path = pkg_resources.resource_filename(
-                "cohort_validator", "../circe-be/target/circe-1.13.0-SNAPSHOT.jar"
-            )
-            if os.path.exists(jar_path):
-                return jar_path
-        except:
-            pass
-
-        # Fallback to relative path from package directory
+        # Get the package directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        jar_path = os.path.join(
-            current_dir, "..", "circe-be", "target", "circe-1.13.0-SNAPSHOT.jar"
-        )
+
+        # JAR file is now located in the package's target directory
+        jar_path = os.path.join(current_dir, "target", "circe-1.13.0-SNAPSHOT.jar")
         abs_path = os.path.abspath(jar_path)
-        print(f"DEBUG: Looking for JAR at: {abs_path}")
-        print(f"DEBUG: JAR exists: {os.path.exists(abs_path)}")
+
         return abs_path
 
     def _get_dependencies_path(self) -> str:
         """Get the path to the dependencies directory."""
-        import pkg_resources
-
-        # Try to find dependencies in package data first
-        try:
-            deps_path = pkg_resources.resource_filename(
-                "cohort_validator", "../circe-be/target/dependencies"
-            )
-            if os.path.exists(deps_path):
-                return deps_path
-        except:
-            pass
-
-        # Fallback to relative path from package directory
+        # Get the package directory
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        deps_path = os.path.join(
-            current_dir, "..", "circe-be", "target", "dependencies"
-        )
+
+        # Dependencies directory is now located in the package's target directory
+        deps_path = os.path.join(current_dir, "target", "dependencies")
         abs_path = os.path.abspath(deps_path)
-        print(f"DEBUG: Looking for dependencies at: {abs_path}")
-        print(f"DEBUG: Dependencies exist: {os.path.exists(abs_path)}")
+
         return abs_path
 
     def _start_jvm(self):
