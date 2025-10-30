@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cohort-validator"
-version = "1.0.0"
+version = "1.0.1"
 description = "Python interface to OHDSI CIRCE cohort validation library"
 readme = "README.md"
 license = {text = "MIT"}
@@ -34,7 +34,7 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 dependencies = [
-    "jpype1>=1.4.1",
+    "pydantic>=2.12.3",
 ]
 
 [project.optional-dependencies]
@@ -56,9 +56,6 @@ Documentation = "https://github.com/OdyOSG/ohdsi-cohort-validator#readme"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["cohort_validator*"]
-
-[tool.setuptools.package-data]
-cohort_validator = ["target/*.jar", "target/dependencies/*.jar", "*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["cohort_validator/tests"]
@@ -85,7 +82,6 @@ extend-exclude = '''
   | buck-out
   | build
   | dist
-  | circe-be
 )/
 '''
 

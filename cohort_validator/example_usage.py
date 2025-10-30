@@ -8,7 +8,7 @@ cohort expressions and handle the results.
 
 import json
 
-from cohort_validator import CohortValidator
+from validators import CohortValidator
 
 
 def main():

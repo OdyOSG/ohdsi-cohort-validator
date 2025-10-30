@@ -2,12 +2,9 @@
 # This Makefile handles building Java JAR files and Python package development
 
 # Variables
-CIRCE_DIR = circe-be
 TARGET_DIR = $(CIRCE_DIR)/target
-JAR_FILE = $(TARGET_DIR)/circe-1.13.0-SNAPSHOT.jar
 DEPS_DIR = $(TARGET_DIR)/dependencies
 PACKAGE_TARGET_DIR = cohort_validator/target
-PACKAGE_JAR_FILE = $(PACKAGE_TARGET_DIR)/circe-1.13.0-SNAPSHOT.jar
 PACKAGE_DEPS_DIR = $(PACKAGE_TARGET_DIR)/dependencies
 VENV_DIR = venv
 PYTHON = $(VENV_DIR)/bin/python
@@ -39,7 +36,7 @@ help: ## Show this help message
 
 # Setup targets
 .PHONY: setup
-setup: venv install-deps copy-jar-to-package ## Set up the complete environment (venv, dependencies, JAR files)
+setup: venv install-deps
 
 .PHONY: venv
 venv: ## Create Python virtual environment
@@ -58,61 +55,6 @@ install-deps: venv ## Install Python dependencies
 	@$(PIP) install -r requirements.txt
 	@$(PIP) install -e ".[dev]"
 	@echo "$(GREEN)✓ Python dependencies installed$(NC)"
-
-# Java build targets
-.PHONY: clone-circe
-clone-circe: ## Clone the CIRCE repository from GitHub
-	@echo "$(BLUE)Cloning CIRCE repository from GitHub...$(NC)"
-	@if [ ! -d "$(CIRCE_DIR)" ]; then \
-		git clone https://github.com/OHDSI/circe-be.git $(CIRCE_DIR); \
-		echo "$(GREEN)✓ CIRCE repository cloned$(NC)"; \
-	else \
-		echo "$(YELLOW)✓ CIRCE repository already exists$(NC)"; \
-	fi
-
-.PHONY: build-jar
-build-jar: clone-circe ## Build the CIRCE Java JAR file and dependencies
-	@echo "$(BLUE)Building CIRCE Java library...$(NC)"
-	@cd $(CIRCE_DIR) && mvn clean compile package -DskipTests -Dmaven.test.skip=true
-	@echo "$(BLUE)Building Java dependencies...$(NC)"
-	@cd $(CIRCE_DIR) && mvn dependency:copy-dependencies -DoutputDirectory=target/dependencies
-	@echo "$(GREEN)✓ CIRCE JAR file and dependencies built$(NC)"
-
-.PHONY: copy-jar-to-package
-copy-jar-to-package: build-jar ## Copy JAR files to package target directory
-	@echo "$(BLUE)Copying JAR files to package target directory...$(NC)"
-	@mkdir -p $(PACKAGE_TARGET_DIR)
-	@cp $(JAR_FILE) $(PACKAGE_JAR_FILE)
-	@cp -r $(DEPS_DIR) $(PACKAGE_DEPS_DIR)
-	@echo "$(GREEN)✓ JAR files copied to package target directory$(NC)"
-
-.PHONY: check-deps
-check-deps: ## Check if JAR files and dependencies exist
-	@echo "$(BLUE)Checking Java dependencies...$(NC)"
-	@echo "$(CYAN)Original CIRCE build:$(NC)"
-	@if [ -f "$(JAR_FILE)" ]; then \
-		echo "$(GREEN)✓ CIRCE JAR file exists: $(JAR_FILE)$(NC)"; \
-	else \
-		echo "$(RED)✗ CIRCE JAR file missing: $(JAR_FILE)$(NC)"; \
-	fi
-	@if [ -d "$(DEPS_DIR)" ]; then \
-		JAR_COUNT=$$(ls -1 $(DEPS_DIR)/*.jar 2>/dev/null | wc -l | xargs -I {} echo "{}"); \
-		echo "$(GREEN)✓ Dependencies directory exists with $$JAR_COUNT JAR files$(NC)"; \
-	else \
-		echo "$(RED)✗ Dependencies directory missing: $(DEPS_DIR)$(NC)"; \
-	fi
-	@echo "$(CYAN)Package target directory:$(NC)"
-	@if [ -f "$(PACKAGE_JAR_FILE)" ]; then \
-		echo "$(GREEN)✓ Package JAR file exists: $(PACKAGE_JAR_FILE)$(NC)"; \
-	else \
-		echo "$(RED)✗ Package JAR file missing: $(PACKAGE_JAR_FILE)$(NC)"; \
-	fi
-	@if [ -d "$(PACKAGE_DEPS_DIR)" ]; then \
-		PACKAGE_JAR_COUNT=$$(ls -1 $(PACKAGE_DEPS_DIR)/*.jar 2>/dev/null | wc -l | xargs -I {} echo "{}"); \
-		echo "$(GREEN)✓ Package dependencies directory exists with $$PACKAGE_JAR_COUNT JAR files$(NC)"; \
-	else \
-		echo "$(RED)✗ Package dependencies directory missing: $(PACKAGE_DEPS_DIR)$(NC)"; \
-	fi
 
 # Python package targets
 .PHONY: install
@@ -206,29 +148,6 @@ type-check: setup ## Run type checking with mypy
 	@$(PYTHON) -m mypy cohort_validator/
 	@echo "$(GREEN)✓ Type checking completed$(NC)"
 
-# Clean targets
-.PHONY: clean-java
-clean-java: ## Clean Java build artifacts
-	@echo "$(BLUE)Cleaning Java build artifacts...$(NC)"
-	@if [ -d "$(CIRCE_DIR)" ]; then \
-		cd $(CIRCE_DIR) && mvn clean; \
-		echo "$(GREEN)✓ Java build artifacts cleaned$(NC)"; \
-	else \
-		echo "$(YELLOW)✓ No CIRCE directory to clean$(NC)"; \
-	fi
-
-.PHONY: clean-circe
-clean-circe: ## Remove the cloned CIRCE repository
-	@echo "$(BLUE)Removing CIRCE repository...$(NC)"
-	@rm -rf $(CIRCE_DIR)
-	@echo "$(GREEN)✓ CIRCE repository removed$(NC)"
-
-.PHONY: clean-package-target
-clean-package-target: ## Clean package target directory
-	@echo "$(BLUE)Cleaning package target directory...$(NC)"
-	@rm -rf $(PACKAGE_TARGET_DIR)
-	@echo "$(GREEN)✓ Package target directory cleaned$(NC)"
-
 .PHONY: clean-python
 clean-python: clean-package-target ## Clean Python build artifacts and cache
 	@echo "$(BLUE)Cleaning Python artifacts...$(NC)"
@@ -246,11 +165,8 @@ clean-venv: ## Remove virtual environment
 	@echo "$(GREEN)✓ Virtual environment removed$(NC)"
 
 .PHONY: clean
-clean: clean-python clean-java ## Clean all build artifacts
+clean: clean-python ## Clean all build artifacts
 
-.PHONY: clean-all
-clean-all: clean clean-venv clean-circe ## Clean everything including virtual environment and CIRCE repository
-	@echo "$(GREEN)✓ Everything cleaned$(NC)"
 
 # Documentation
 .PHONY: docs
