@@ -5,14 +5,14 @@ Concept-related validation checks.
 from typing import List, Optional
 
 from ..models.cohort import CohortExpression, ConceptSet
-from ..models.validation import ConceptSetWarning, WarningSeverity
-from .base import BaseCheck, BaseIterableCheck, WarningReporter
+from ..models.validation import WarningSeverity
+from .base import BaseCheck, WarningReporter
 
 
 class EmptyConceptSetCheck(BaseCheck):
     """Check for empty concept sets."""
 
-    EMPTY_ERROR = 'Concept set "{}" contains no concepts'
+    EMPTY_ERROR = "Concept set {} contains no concepts"
 
     def _check(self, expression: CohortExpression, reporter: WarningReporter) -> None:
         """Check for empty concept sets."""
@@ -28,10 +28,10 @@ class EmptyConceptSetCheck(BaseCheck):
 class DuplicatesConceptSetCheck(BaseCheck):
     """Check for duplicate concept sets."""
 
-    DUPLICATES_WARNING = 'Concept set "{}" contains the same concepts like {}'
+    DUPLICATES_WARNING = "Concept set {} contains the same concepts like {}"
 
     def _define_severity(self) -> WarningSeverity:
-        return WarningSeverity.INFO
+        return WarningSeverity.WARNING
 
     def _check(self, expression: CohortExpression, reporter: WarningReporter) -> None:
         """Check for duplicate concept sets."""
@@ -78,7 +78,7 @@ class DuplicatesConceptSetCheck(BaseCheck):
             return str(items1) == str(items2)
 
 
-class UnusedConceptsCheck(BaseIterableCheck):
+class UnusedConceptsCheck(BaseCheck):
     """Check for unused concept sets."""
 
     UNUSED_WARNING = 'Concept Set "{}" is not used'
@@ -86,13 +86,67 @@ class UnusedConceptsCheck(BaseIterableCheck):
     def _define_severity(self) -> WarningSeverity:
         return WarningSeverity.WARNING
 
-    def _internal_check(
-        self, expression: CohortExpression, reporter: WarningReporter
-    ) -> None:
+    def _check(self, expression: CohortExpression, reporter: WarningReporter) -> None:
         """Check for unused concept sets."""
+        # Java doesn't report unused concept sets when there are no criteria anywhere
+        # (no primary criteria, no inclusion rules with criteria, no additional criteria with criteria)
+        has_primary_criteria = (
+            expression.primary_criteria
+            and expression.primary_criteria.criteria_list
+            and len(expression.primary_criteria.criteria_list) > 0
+        )
+        has_inclusion_rules_criteria = False
+        if expression.inclusion_rules:
+            for rule in expression.inclusion_rules:
+                if (
+                    rule.expression
+                    and rule.expression.criteria_list
+                    and len(rule.expression.criteria_list) > 0
+                ):
+                    has_inclusion_rules_criteria = True
+                    break
+        has_additional_criteria = False
+        if expression.additional_criteria:
+            if (
+                expression.additional_criteria.criteria_list
+                and len(expression.additional_criteria.criteria_list) > 0
+            ):
+                has_additional_criteria = True
+            elif expression.additional_criteria.groups:
+                for group in expression.additional_criteria.groups:
+                    if group.criteria_list and len(group.criteria_list) > 0:
+                        has_additional_criteria = True
+                        break
+
+        has_censoring_criteria = (
+            expression.censoring_criteria and len(expression.censoring_criteria) > 0
+        )
+
+        # Java reports unused concept sets when there are censoring criteria but no primary/inclusion/additional criteria
+        # But doesn't report when there are no criteria anywhere
+        if (
+            not has_primary_criteria
+            and not has_inclusion_rules_criteria
+            and not has_additional_criteria
+            and not has_censoring_criteria
+        ):
+            return
+
+        # Check for invalid CorrelatedCriteria structures that would cause Java to crash
+        # (CorrelatedCriteria items without Criteria objects cause NullPointerException)
+        if self._has_invalid_correlated_criteria(expression):
+            return
+
         additional_criteria = self._get_additional_criteria(expression)
 
         for concept_set in expression.concept_sets:
+            # Skip empty concept sets (Java doesn't report unused empty concept sets)
+            if (
+                not concept_set.expression
+                or not concept_set.expression.items
+                or len(concept_set.expression.items) == 0
+            ):
+                continue
             if not self._is_concept_set_used(
                 expression, additional_criteria, concept_set
             ):
@@ -115,6 +169,117 @@ class UnusedConceptsCheck(BaseIterableCheck):
             criteria.extend(group.criteria_list)
             criteria.extend(self._get_criteria_from_groups(group.groups))
         return criteria
+
+    def _has_invalid_correlated_criteria(self, expression: CohortExpression) -> bool:
+        """Check for invalid CorrelatedCriteria structures that would cause Java to crash."""
+        # Check primary criteria
+        if expression.primary_criteria and expression.primary_criteria.criteria_list:
+            for criteria in expression.primary_criteria.criteria_list:
+                if self._check_correlated_criteria_invalid(criteria):
+                    return True
+
+        # Check additional criteria
+        if expression.additional_criteria:
+            if expression.additional_criteria.criteria_list:
+                for criteria_item in expression.additional_criteria.criteria_list:
+                    if hasattr(criteria_item, "criteria") and criteria_item.criteria:
+                        if self._check_correlated_criteria_invalid(
+                            criteria_item.criteria
+                        ):
+                            return True
+            if expression.additional_criteria.groups:
+                for group in expression.additional_criteria.groups:
+                    if self._check_group_for_invalid_correlated_criteria(group):
+                        return True
+
+        # Check inclusion rules
+        if expression.inclusion_rules:
+            for rule in expression.inclusion_rules:
+                if rule.expression and rule.expression.criteria_list:
+                    for criteria_item in rule.expression.criteria_list:
+                        if (
+                            hasattr(criteria_item, "criteria")
+                            and criteria_item.criteria
+                        ):
+                            if self._check_correlated_criteria_invalid(
+                                criteria_item.criteria
+                            ):
+                                return True
+
+        return False
+
+    def _check_group_for_invalid_correlated_criteria(self, group) -> bool:
+        """Check a group for invalid correlated criteria."""
+        if group.criteria_list:
+            for criteria_item in group.criteria_list:
+                if hasattr(criteria_item, "criteria") and criteria_item.criteria:
+                    if self._check_correlated_criteria_invalid(criteria_item.criteria):
+                        return True
+        if group.groups:
+            for sub_group in group.groups:
+                if self._check_group_for_invalid_correlated_criteria(sub_group):
+                    return True
+        return False
+
+    def _check_correlated_criteria_invalid(self, criteria) -> bool:
+        """Check if criteria has invalid correlated criteria (items without Criteria objects)."""
+        # Check all domain-specific criteria for correlated criteria
+        domain_criteria = [
+            "drug_exposure",
+            "condition_occurrence",
+            "visit_occurrence",
+            "procedure_occurrence",
+            "observation",
+            "measurement",
+            "death",
+            "device_exposure",
+            "specimen",
+            "payer_plan_period",
+            "observation_period",
+            "condition_era",
+            "drug_era",
+            "dose_era",
+            "visit_detail",
+            "location_region",
+        ]
+
+        for domain in domain_criteria:
+            if hasattr(criteria, domain):
+                domain_obj = getattr(criteria, domain, None)
+                if domain_obj is not None:
+                    if (
+                        hasattr(domain_obj, "correlated_criteria")
+                        and domain_obj.correlated_criteria
+                    ):
+                        if self._check_correlated_criteria_group_invalid(
+                            domain_obj.correlated_criteria
+                        ):
+                            return True
+
+        return False
+
+    def _check_correlated_criteria_group_invalid(self, criteria_group) -> bool:
+        """Check if a correlated criteria group has invalid items (no Criteria object)."""
+        if hasattr(criteria_group, "criteria_list") and criteria_group.criteria_list:
+            for correlated_criteria in criteria_group.criteria_list:
+                # Check if this item doesn't have a Criteria object (would cause Java to crash)
+                if (
+                    not hasattr(correlated_criteria, "criteria")
+                    or correlated_criteria.criteria is None
+                ):
+                    return True
+                # Recursively check nested correlated criteria
+                if self._check_correlated_criteria_invalid(
+                    correlated_criteria.criteria
+                ):
+                    return True
+
+        if hasattr(criteria_group, "groups") and criteria_group.groups:
+            for group in criteria_group.groups:
+                if self._check_correlated_criteria_group_invalid(group):
+                    return True
+
+        return False
 
     def _is_concept_set_used(
         self,
@@ -147,6 +312,14 @@ class UnusedConceptsCheck(BaseIterableCheck):
         ):
             return True
 
+        # Check exit criteria (EndStrategy with CustomEraStrategy)
+        if (
+            expression.end_strategy
+            and expression.end_strategy.custom_era
+            and expression.end_strategy.custom_era.drug_codeset_id == concept_set.id
+        ):
+            return True
+
         return False
 
     def _is_concept_set_used_in_criteria_list(
@@ -163,15 +336,53 @@ class UnusedConceptsCheck(BaseIterableCheck):
 
             # Check if this is a CorelatedCriteria with a nested Criteria
             if hasattr(criteria, "criteria") and criteria.criteria:
-                codeset_id = self._get_codeset_id_from_criteria(criteria.criteria)
+                nested_criteria = criteria.criteria
+                codeset_id = self._get_codeset_id_from_criteria(nested_criteria)
                 if codeset_id == concept_set.id:
                     return True
+                # Also check domain-specific criteria and their correlated_criteria in nested criteria
+                domain_criteria_list = [
+                    "drug_exposure",
+                    "condition_occurrence",
+                    "visit_occurrence",
+                    "procedure_occurrence",
+                    "observation",
+                    "measurement",
+                    "death",
+                    "device_exposure",
+                    "specimen",
+                    "payer_plan_period",
+                    "observation_period",
+                    "condition_era",
+                    "drug_era",
+                    "dose_era",
+                    "visit_detail",
+                    "location_region",
+                ]
+                for domain in domain_criteria_list:
+                    if hasattr(nested_criteria, domain):
+                        domain_obj = getattr(nested_criteria, domain, None)
+                        if domain_obj is not None:
+                            if (
+                                hasattr(domain_obj, "codeset_id")
+                                and domain_obj.codeset_id == concept_set.id
+                            ):
+                                return True
+                            if (
+                                hasattr(domain_obj, "correlated_criteria")
+                                and domain_obj.correlated_criteria
+                            ):
+                                if self._is_concept_set_used_in_criteria_group(
+                                    domain_obj.correlated_criteria, concept_set
+                                ):
+                                    return True
 
             # Check domain-specific criteria
             codeset_id = self._get_codeset_id_from_criteria(criteria)
             if codeset_id == concept_set.id:
                 return True
 
+            # Check correlated_criteria on the criteria object itself
             if (
                 hasattr(criteria, "correlated_criteria")
                 and criteria.correlated_criteria
@@ -180,6 +391,46 @@ class UnusedConceptsCheck(BaseIterableCheck):
                     criteria.correlated_criteria, concept_set
                 ):
                     return True
+
+            # Also check correlated_criteria within domain-specific criteria objects
+            domain_criteria = [
+                "drug_exposure",
+                "condition_occurrence",
+                "visit_occurrence",
+                "procedure_occurrence",
+                "observation",
+                "measurement",
+                "death",
+                "device_exposure",
+                "specimen",
+                "payer_plan_period",
+                "observation_period",
+                "condition_era",
+                "drug_era",
+                "dose_era",
+                "visit_detail",
+                "location_region",
+            ]
+
+            for domain in domain_criteria:
+                if hasattr(criteria, domain):
+                    domain_obj = getattr(criteria, domain, None)
+                    if domain_obj is not None:
+                        # Check codeset_id in domain object
+                        if (
+                            hasattr(domain_obj, "codeset_id")
+                            and domain_obj.codeset_id == concept_set.id
+                        ):
+                            return True
+                        # Check correlated_criteria in domain object
+                        if (
+                            hasattr(domain_obj, "correlated_criteria")
+                            and domain_obj.correlated_criteria
+                        ):
+                            if self._is_concept_set_used_in_criteria_group(
+                                domain_obj.correlated_criteria, concept_set
+                            ):
+                                return True
         return False
 
     def _get_codeset_id_from_criteria(self, criteria) -> Optional[int]:

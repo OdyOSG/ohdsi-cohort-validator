@@ -6,16 +6,13 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from .base import CollapseSettings, CollapseType, ObservationFilter, Period, ResultLimit
+from .base import CollapseSettings, ObservationFilter, Period, ResultLimit
 from .concept import ConceptSet
 from .criteria import (
-    CorelatedCriteria,
     Criteria,
     CriteriaGroup,
-    DemographicCriteria,
     EndStrategy,
 )
-from .validation import WarningSeverity
 
 
 class PrimaryCriteria(BaseModel):

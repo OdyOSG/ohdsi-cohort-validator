@@ -2,7 +2,7 @@
 Criteria models for different domain types in cohort definitions.
 """
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Union
+from typing import ClassVar, List, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -561,9 +561,9 @@ class CustomEraStrategy(BaseModel):
 
 
 class EndStrategy(BaseModel):
-    """Base class for end strategies."""
+    """End strategy configuration."""
 
-    pass
+    custom_era: Optional[CustomEraStrategy] = Field(None, alias="CustomEra")
 
 
 class CriteriaGroup(BaseModel):

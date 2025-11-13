@@ -94,4 +94,3 @@ class ConceptSetSelection(BaseModel):
     is_exclusion: bool = Field(
         False, alias="IsExclusion", description="Whether this is an exclusion"
     )
-

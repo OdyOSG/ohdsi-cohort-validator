@@ -11,38 +11,48 @@ from pydantic import BaseModel, Field
 class DateRange(BaseModel):
     """Date range filter with operator and optional extent."""
 
-    value: Optional[str] = Field(None, description="Date value in YYYY-MM-DD format")
+    value: Optional[str] = Field(
+        None, alias="Value", description="Date value in YYYY-MM-DD format"
+    )
     op: Optional[str] = Field(
         None, alias="Op", description="Comparison operator (gt, lt, gte, lte, eq, bt)"
     )
-    extent: Optional[str] = Field(None, description="Extent for between operations")
+    extent: Optional[str] = Field(
+        None, alias="Extent", description="Extent for between operations"
+    )
 
 
 class NumericRange(BaseModel):
     """Numeric range filter with operator and optional extent."""
 
-    value: Optional[Union[int, float]] = Field(None, description="Numeric value")
+    value: Optional[Union[int, float]] = Field(
+        None, alias="Value", description="Numeric value"
+    )
     op: Optional[str] = Field(
         None, alias="Op", description="Comparison operator (gt, lt, gte, lte, eq, bt)"
     )
     extent: Optional[Union[int, float]] = Field(
-        None, description="Extent for between operations"
+        None, alias="Extent", description="Extent for between operations"
     )
 
 
 class TextFilter(BaseModel):
     """Text filter with operator."""
 
-    text: Optional[str] = Field(None, description="Text value to filter")
+    text: Optional[str] = Field(None, alias="Text", description="Text value to filter")
     op: Optional[str] = Field(
-        None, description="Text operator (contains, startsWith, endsWith, eq)"
+        None,
+        alias="Op",
+        description="Text operator (contains, startsWith, endsWith, eq)",
     )
 
 
 class ResultLimit(BaseModel):
     """Result limiting configuration."""
 
-    type: str = Field(default="First", description="Limit type (First, All)")
+    type: str = Field(
+        default="First", alias="Type", description="Limit type (First, All)"
+    )
 
 
 class Period(BaseModel):

@@ -2,20 +2,18 @@
 Main cohort validator that runs all validation checks.
 """
 
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 from ..models.cohort import CohortExpression
 from ..models.validation import ValidationResult, WarningSeverity
 from .concept_checks import (
-    ConceptCheck,
-    ConceptSetSelectionCheck,
     DuplicatesConceptSetCheck,
     EmptyConceptSetCheck,
     UnusedConceptsCheck,
 )
 from .criteria_checks import (
+    AdditionalCriteriaWarningCheck,
     AttributeCheck,
-    ConceptSetCriteriaCheck,
     CriteriaContradictionsCheck,
     DeathTimeWindowCheck,
     DomainTypeCheck,
@@ -25,19 +23,17 @@ from .criteria_checks import (
     DuplicatesCriteriaCheck,
     EmptyAdditionalCriteriaValueCheck,
     EmptyCensoringCriteriaValueCheck,
+    CensoringEventsWarningCheck,
     EmptyDemographicValueCheck,
     EmptyPrimaryCriteriaValueCheck,
     EventsProgressionCheck,
-    ExitCriteriaCheck,
-    ExitCriteriaDaysOffsetCheck,
     IncompleteRuleCheck,
     InitialEventCheck,
-    InvalidCriteriaTypeCheck,
-    MissingConceptSetCheck,
+    MissingConceptSetPrimaryCheck,
+    MissingConceptSetInclusionCheck,
     NoExitCriteriaCheck,
-    OccurrenceCheck,
+    PrimaryCriteriaWarningCheck,
     RangeCheck,
-    TextCheck,
     TimePatternCheck,
     TimeWindowCheck,
 )
@@ -53,19 +49,12 @@ class CohortValidator:
             UnusedConceptsCheck(),
             EmptyConceptSetCheck(),
             DuplicatesConceptSetCheck(),
-            ConceptSetSelectionCheck(),
-            ConceptCheck(),
             # Criteria checks
             RangeCheck(),
-            TextCheck(),
             AttributeCheck(),
             IncompleteRuleCheck(),
             InitialEventCheck(),
-            NoExitCriteriaCheck(),
-            ConceptSetCriteriaCheck(),
-            InvalidCriteriaTypeCheck(),
             DrugEraCheck(),
-            OccurrenceCheck(),
             DuplicatesCriteriaCheck(),
             DuplicatePrimaryCriteriaCheck(),
             DrugDomainCheck(),
@@ -77,11 +66,14 @@ class CohortValidator:
             DeathTimeWindowCheck(),
             EmptyDemographicValueCheck(),
             EmptyPrimaryCriteriaValueCheck(),
+            PrimaryCriteriaWarningCheck(),
             EmptyAdditionalCriteriaValueCheck(),
+            AdditionalCriteriaWarningCheck(),
             EmptyCensoringCriteriaValueCheck(),
-            MissingConceptSetCheck(),
-            ExitCriteriaCheck(),
-            ExitCriteriaDaysOffsetCheck(),
+            CensoringEventsWarningCheck(),
+            MissingConceptSetPrimaryCheck(),
+            MissingConceptSetInclusionCheck(),
+            NoExitCriteriaCheck(),
         ]
 
     def validate(self, expression: CohortExpression) -> ValidationResult:
@@ -302,53 +294,3 @@ class CohortValidator:
             List of messages with the specified severity
         """
         return result.get_messages_by_severity(severity)
-
-    def validate_cohort(self, cohort_data) -> Tuple[List[dict], List[dict]]:
-        """
-        Validate a cohort expression. Accepts either a dictionary or JSON string.
-
-        Args:
-            cohort_data: Either a dictionary containing the cohort definition or a JSON string
-
-        Returns:
-            Tuple of (warnings, errors) where each is a list of dictionaries containing:
-            - message: Description of the issue
-            - severity: Severity level (WARNING, CRITICAL, etc.)
-        """
-        import json
-        from typing import Union
-
-        # Convert dict to JSON string if needed
-        if isinstance(cohort_data, dict):
-            json_str = json.dumps(cohort_data)
-        elif isinstance(cohort_data, str):
-            json_str = cohort_data
-        else:
-            raise ValueError(
-                f"cohort_data must be a dict or JSON string, got {type(cohort_data)}"
-            )
-
-        # Validate using validate_json
-        result = self.validate_json(json_str)
-
-        # Convert ValidationResult to expected format (warnings, errors)
-        warnings = []
-        errors = []
-
-        for warning in result.warnings:
-            warnings.append(
-                {
-                    "message": warning.to_message(),
-                    "severity": warning.severity.value,
-                }
-            )
-
-        for error in result.errors:
-            errors.append(
-                {
-                    "message": error.to_message(),
-                    "severity": error.severity.value,
-                }
-            )
-
-        return warnings, errors

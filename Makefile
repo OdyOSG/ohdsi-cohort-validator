@@ -88,41 +88,40 @@ clean-build: ## Clean build artifacts
 test: setup ## Run all test suites
 	@echo "$(PURPLE)Running all test suites...$(NC)"
 	@echo "$(CYAN)========================================$(NC)"
-	@$(MAKE) test-basic
-	@echo ""
-	@$(MAKE) test-final
-	@echo ""
-	@$(MAKE) test-comprehensive
+	@$(PYTHON) -m pytest cohort_validator/tests/ -v
 	@echo ""
 	@echo "$(GREEN)🎉 All tests completed!$(NC)"
 
 .PHONY: test-basic
-test-basic: setup ## Run basic validation tests
-	@echo "$(BLUE)Running basic validation tests...$(NC)"
-	@$(PYTHON) -m pytest cohort_validator/tests/test_validator.py -v
+test-basic: setup ## Run basic model and validation tests
+	@echo "$(BLUE)Running basic model and validation tests...$(NC)"
+	@$(PYTHON) -m pytest cohort_validator/tests/test_models_*.py -v
 
-.PHONY: test-final
-test-final: setup ## Run final comprehensive tests
-	@echo "$(BLUE)Running final comprehensive tests...$(NC)"
-	@$(PYTHON) -m pytest cohort_validator/tests/test_final.py -v
+.PHONY: test-validators
+test-validators: setup ## Run validator tests
+	@echo "$(BLUE)Running validator tests...$(NC)"
+	@$(PYTHON) -m pytest cohort_validator/tests/test_validators_*.py cohort_validator/tests/test_cohort_validator.py -v
 
-.PHONY: test-comprehensive
-test-comprehensive: setup ## Run comprehensive validation tests
-	@echo "$(BLUE)Running comprehensive validation tests...$(NC)"
-	@$(PYTHON) -m pytest cohort_validator/tests/test_comprehensive.py -v
+.PHONY: test-models
+test-models: setup ## Run model tests only
+	@echo "$(BLUE)Running model tests...$(NC)"
+	@$(PYTHON) -m pytest cohort_validator/tests/test_models_*.py -v
+
+.PHONY: test-cli
+test-cli: setup ## Run CLI tests only
+	@echo "$(BLUE)Running CLI tests...$(NC)"
+	@$(PYTHON) -m pytest cohort_validator/tests/test_cli.py -v
 
 .PHONY: test-quick
 test-quick: setup ## Run quick basic tests only
 	@echo "$(PURPLE)Running quick basic tests...$(NC)"
-	@$(MAKE) test-basic
+	@$(PYTHON) -m pytest cohort_validator/tests/test_models_base.py cohort_validator/tests/test_cohort_validator.py -v
 
 .PHONY: test-coverage
 test-coverage: setup ## Run tests with coverage report
 	@echo "$(BLUE)Running tests with coverage...$(NC)"
-	@$(PIP) install coverage
-	@$(PYTHON) -m coverage run -m pytest cohort_validator/tests/
-	@$(PYTHON) -m coverage report
-	@$(PYTHON) -m coverage html
+	@$(PIP) install coverage pytest-cov 2>/dev/null || true
+	@$(PYTHON) -m pytest cohort_validator/tests/ --cov=cohort_validator --cov-report=term --cov-report=html
 	@echo "$(GREEN)✓ Coverage report generated in htmlcov/$(NC)"
 
 # Linting and formatting

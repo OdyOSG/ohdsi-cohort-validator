@@ -93,6 +93,8 @@ class ValidationResult(BaseModel):
         concept_set: Optional[ConceptSet] = None,
     ):
         """Add a warning to the result."""
+        # Note: Java validator allows duplicates, so we don't remove them to match Java behavior
+
         if concept_set:
             warning = ConceptSetWarning(
                 severity=severity, message=message, concept_set=concept_set

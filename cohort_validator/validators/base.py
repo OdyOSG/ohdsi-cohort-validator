@@ -5,12 +5,8 @@ Base validation classes for cohort definition validation.
 from abc import ABC, abstractmethod
 from typing import Any, Callable, List, Optional
 
-from ..models.cohort import (
-    CohortExpression,
-    CriteriaGroup,
-    PrimaryCriteria,
-)
-from ..models.criteria import CorelatedCriteria, Criteria, DemographicCriteria
+from ..models.cohort import CohortExpression, CriteriaGroup, PrimaryCriteria
+from ..models.criteria import CorelatedCriteria, Criteria
 from ..models.validation import Warning, WarningSeverity
 
 
@@ -126,12 +122,36 @@ class BaseValueCheck(BaseCheck):
                     )
 
     def _check_criteria(
-        self, criteria: Criteria, reporter: WarningReporter, name: str
+        self, criteria: Any, reporter: WarningReporter, name: str
     ) -> None:
-        """Check individual criteria."""
-        if criteria.correlated_criteria:
-            self._check_criteria_group(criteria.correlated_criteria, reporter, name)
-        self._get_factory(reporter, name).check(criteria)
+        """Check individual criteria (handles Criteria, CorelatedCriteria, and DemographicCriteria)."""
+        # Check for CorelatedCriteria (has start_window, end_window, occurrence attributes)
+        if (
+            hasattr(criteria, "start_window")
+            or hasattr(criteria, "end_window")
+            or hasattr(criteria, "occurrence")
+        ):
+            # This is a CorelatedCriteria
+            if hasattr(criteria, "criteria") and criteria.criteria:
+                self._check_criteria(criteria.criteria, reporter, name)
+        # Check for DemographicCriteria (has age, gender, race, ethnicity attributes)
+        elif (
+            hasattr(criteria, "age")
+            or hasattr(criteria, "gender")
+            or hasattr(criteria, "race")
+            or hasattr(criteria, "ethnicity")
+        ):
+            # This is a DemographicCriteria
+            self._get_factory(reporter, name).check(criteria)
+        # Otherwise, it's a Criteria
+        else:
+            # Check regular criteria
+            if (
+                hasattr(criteria, "correlated_criteria")
+                and criteria.correlated_criteria
+            ):
+                self._check_criteria_group(criteria.correlated_criteria, reporter, name)
+            self._get_factory(reporter, name).check(criteria)
 
     def _check_criteria_group(
         self, criteria_group: CriteriaGroup, reporter: WarningReporter, name: str
@@ -144,19 +164,6 @@ class BaseValueCheck(BaseCheck):
         for group in criteria_group.groups:
             self._check_criteria_group(group, reporter, name)
 
-    def _check_criteria(
-        self, criteria: CorelatedCriteria, reporter: WarningReporter, name: str
-    ) -> None:
-        """Check correlated criteria."""
-        if criteria.criteria:
-            self._check_criteria(criteria.criteria, reporter, name)
-
-    def _check_criteria(
-        self, criteria: DemographicCriteria, reporter: WarningReporter, name: str
-    ) -> None:
-        """Check demographic criteria."""
-        self._get_factory(reporter, name).check(criteria)
-
     @abstractmethod
     def _get_factory(
         self, reporter: WarningReporter, name: str
@@ -165,41 +172,10 @@ class BaseValueCheck(BaseCheck):
         pass
 
 
-class BaseIterableCheck(BaseCheck):
-    """Base class for iterable validation checks."""
-
-    def _check(self, expression: CohortExpression, reporter: WarningReporter) -> None:
-        """Run the iterable check with before/after hooks."""
-        self._before_check(reporter, expression)
-        self._internal_check(expression, reporter)
-        self._after_check(reporter, expression)
-
-    def _before_check(
-        self, reporter: WarningReporter, expression: CohortExpression
-    ) -> None:
-        """Hook called before internal check."""
-        pass
-
-    def _after_check(
-        self, reporter: WarningReporter, expression: CohortExpression
-    ) -> None:
-        """Hook called after internal check."""
-        pass
-
-    @abstractmethod
-    def _internal_check(
-        self, expression: CohortExpression, reporter: WarningReporter
-    ) -> None:
-        """Perform the internal validation check."""
-        pass
-
-
-class BaseCorelatedCriteriaCheck(BaseIterableCheck):
+class BaseCorelatedCriteriaCheck(BaseCheck):
     """Base class for correlated criteria validation checks."""
 
-    def _internal_check(
-        self, expression: CohortExpression, reporter: WarningReporter
-    ) -> None:
+    def _check(self, expression: CohortExpression, reporter: WarningReporter) -> None:
         """Check all inclusion rules for correlated criteria."""
         for inclusion_rule in expression.inclusion_rules:
             if inclusion_rule.expression:
