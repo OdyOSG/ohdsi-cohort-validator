@@ -10,7 +10,7 @@ you to validate cohort expressions and receive detailed warnings and errors.
 
 from .validators.cohort_checks import CohortValidator
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 __author__ = "Numan Burak Fidan"
 __email__ = "numanburak_fidan@epam.com"
 

@@ -185,3 +185,15 @@ class TestCohortValidator:
         assert isinstance(warnings, list)
         assert isinstance(errors, list)
 
+    def test_parse_error_indexes_are_one_based(self):
+        """Test validation paths report list indexes starting from 1."""
+        validator = CohortValidator()
+
+        try:
+            CohortExpression(ConceptSets=[{"id": 0}])
+        except Exception as error:
+            message = validator._clean_error_message(str(error))
+        else:
+            pytest.fail("Expected CohortExpression parsing to fail")
+
+        assert "Concept Set 1 name" in message

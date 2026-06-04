@@ -29,7 +29,7 @@ def read_requirements():
 
 setup(
     name="cohort-validator",
-    version="1.0.0",
+    version="1.0.2",
     author="Numan Burak Fidan",
     author_email="numanburak_fidan@epam.com",
     description="Python interface to OHDSI CIRCE cohort validation library",

@@ -4,7 +4,7 @@ Concept and concept set related Pydantic models.
 
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Concept(BaseModel):
@@ -57,13 +57,19 @@ class Concept(BaseModel):
 class ConceptSetItem(BaseModel):
     """Individual concept within a concept set."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     concept: Optional[Concept] = Field(None, description="The concept")
-    is_excluded: bool = Field(False, description="Whether this concept is excluded")
+    is_excluded: bool = Field(
+        False, alias="isExcluded", description="Whether this concept is excluded"
+    )
     include_descendants: bool = Field(
-        False, description="Whether to include descendant concepts"
+        False,
+        alias="includeDescendants",
+        description="Whether to include descendant concepts",
     )
     include_mapped: bool = Field(
-        False, description="Whether to include mapped concepts"
+        False, alias="includeMapped", description="Whether to include mapped concepts"
     )
 
 

@@ -124,6 +124,27 @@ class TestConceptSetItem:
         assert item.concept is not None
         assert item.include_descendants is True
 
+    def test_concept_set_item_atlas_aliases(self):
+        """Test ConceptSetItem accepts Atlas JSON field names."""
+        item = ConceptSetItem(
+            concept={"CONCEPT_ID": 201820},
+            isExcluded=True,
+            includeDescendants=True,
+            includeMapped=True,
+        )
+
+        assert item.is_excluded is True
+        assert item.include_descendants is True
+        assert item.include_mapped is True
+
+    def test_concept_set_item_missing_flags_default_to_false(self):
+        """Test concept set item flags are optional."""
+        item = ConceptSetItem(concept={"CONCEPT_ID": 201820})
+
+        assert item.is_excluded is False
+        assert item.include_descendants is False
+        assert item.include_mapped is False
+
 
 class TestConceptSetExpression:
     """Tests for ConceptSetExpression model."""
@@ -225,4 +246,3 @@ class TestConceptSetSelection:
         """Test ConceptSetSelection as exclusion."""
         selection = ConceptSetSelection(codeset_id=0, is_exclusion=True)
         assert selection.is_exclusion is True
-

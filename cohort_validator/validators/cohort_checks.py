@@ -185,14 +185,15 @@ class CohortValidator:
             if len(lines) >= 2:
                 field_line = lines[1].strip()
                 # Clean up field names to be more readable
-                field_name = field_line.replace("CollapseSettings.", "").replace(
+                field_name = self._format_validation_path(field_line)
+                field_name = field_name.replace("CollapseSettings ", "").replace(
                     "CollapseType", "Collapse Type"
                 )
                 field_name = field_name.replace(
-                    "PrimaryCriteria.", "Primary Criteria "
-                ).replace("InclusionRules.", "Inclusion Rule ")
-                field_name = field_name.replace("ConceptSets.", "Concept Set ").replace(
-                    "CriteriaList.", "Criteria "
+                    "PrimaryCriteria ", "Primary Criteria "
+                ).replace("InclusionRules ", "Inclusion Rule ")
+                field_name = field_name.replace("ConceptSets ", "Concept Set ").replace(
+                    "CriteriaList ", "Criteria "
                 )
 
                 # Look for specific error patterns and provide user-friendly messages
@@ -236,6 +237,16 @@ class CohortValidator:
         cleaned = cleaned.replace("BaseModel", "Data Model")
 
         return cleaned
+
+    def _format_validation_path(self, field_path: str) -> str:
+        """Format Pydantic field paths and show list indexes as 1-based."""
+        formatted_parts = []
+        for part in field_path.split("."):
+            if part.isdigit():
+                formatted_parts.append(str(int(part) + 1))
+            else:
+                formatted_parts.append(part)
+        return " ".join(formatted_parts)
 
     def _create_partial_expression(self, data: dict) -> Optional[CohortExpression]:
         """Create a partial expression for validation when full parsing fails."""
